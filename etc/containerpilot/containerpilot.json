@@ -1,0 +1,34 @@
+{
+  "consul": "{{ if .CONSUL_AGENT }}localhost{{ else }}{{ .CONSUL }}{{ end }}:8500",
+  "services": [
+    {
+      "name": "{{ .SERVICE_NAME }}",
+      "port": "{{ .SERVICE_PORT }}",
+      "health": "/usr/local/bin/manage.sh health",
+      "poll": 3,
+      "ttl": 10
+    }
+  ],
+  "backends": [
+  {
+    "name": "{{ .DATABASE }}",
+    "poll": 7,
+    "onChange": "/usr/local/bin/manage.sh onChange-db"
+  }, {
+    "name": "{{ .CACHE }}",
+    "poll": 5,
+    "onChange": "/usr/local/bin/manage.sh onChange-cache"
+  }
+],
+  "coprocesses": [{{ if .CONSUL_AGENT }}
+    {
+      "command": ["/usr/local/bin/consul", "agent",
+                  "-data-dir=/data",
+                  "-config-dir=/config",
+                  "-rejoin",
+                  "-retry-join", "{{ .CONSUL }}",
+                  "-retry-max", "10",
+                  "-retry-interval", "10s"],
+      "restarts": "unlimited"
+    }{{ end }}]
+}
